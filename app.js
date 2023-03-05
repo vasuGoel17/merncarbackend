@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const router = require("./routes/router");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 require("./db/conn");
 const signups = require("./models/signUpSchema");
