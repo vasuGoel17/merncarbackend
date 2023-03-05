@@ -19,7 +19,7 @@ let transporter = nodemailer.createTransport({
 });
 
 //post request when you registered
-router.post("/register", async (req, res) => {
+router.post("/api/register", async (req, res) => {
   const { username, email, number, password } = req.body;
 
   if (!username || !email || !number || !password) {
@@ -53,7 +53,7 @@ router.post("/register", async (req, res) => {
 });
 
 //post request when you login
-router.post("/login", async (req, res) => {
+router.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     res.status(404).json("please fill the data");
@@ -87,7 +87,7 @@ router.post("/login", async (req, res) => {
 });
 
 //if you are valid
-router.get("/validuser", authenticate, async (req, res) => {
+router.get("/api/validuser", authenticate, async (req, res) => {
   try {
     const validuserone = await signups.findOne({ _id: req.userid });
     res.status(201).json({ status: 201, validuserone });
@@ -97,7 +97,7 @@ router.get("/validuser", authenticate, async (req, res) => {
 });
 
 //when you click logout
-router.get("/logout", authenticate, async (req, res) => {
+router.get("/api/logout", authenticate, async (req, res) => {
   // console.log("token is: " + req.token);
   // console.log("userid is: " + req.userid);
   // console.log(req.rootuser[0].tokens.length);
@@ -115,7 +115,7 @@ router.get("/logout", authenticate, async (req, res) => {
   }
 });
 
-router.post("/sendpasswordlink", async (req, res) => {
+router.post("/api/sendpasswordlink", async (req, res) => {
   // console.log(req.body);
   const { email } = req.body;
   if (!email) {
@@ -159,7 +159,7 @@ router.post("/sendpasswordlink", async (req, res) => {
   }
 });
 
-router.get("/forgetpassword/:id/:token", async (req, res) => {
+router.get("/api/forgetpassword/:id/:token", async (req, res) => {
   const { id, token } = req.params;
   // console.log(id, token);
   try {
@@ -177,7 +177,7 @@ router.get("/forgetpassword/:id/:token", async (req, res) => {
   }
 });
 
-router.post("/:id/:token", async (req, res) => {
+router.post("/api/:id/:token", async (req, res) => {
   const { id, token } = req.params;
   const { password } = req.body;
   // console.log("password: " + password);
@@ -204,7 +204,7 @@ router.post("/:id/:token", async (req, res) => {
 });
 
 //post request contact us
-router.post("/contact", async (req, res) => {
+router.post("/api/contact", async (req, res) => {
   const { username, email, number, place, feedback } = req.body;
   //   console.log(req.body);
 
