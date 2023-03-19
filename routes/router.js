@@ -47,7 +47,7 @@ router.post("/api/sendpasswordlink", async (req, res) => {
         from: "goelvasu17@gmail.com",
         to: email,
         subject: "sending email for password reset",
-        text: `THIS LINK IS VALID FOR 2 MINUTES http://localhost:3000/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
+        text: `THIS LINK IS VALID FOR 2 MINUTES https://carrsmarket.netlify.app/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
       };
       transporter.sendMail(mailtopt, (err, info) => {
         if (err) {
