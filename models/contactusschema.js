@@ -17,10 +17,7 @@ const contactUsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  feedback: {
-    type: String,
-    required: true,
-  },
+  feedbacks: [{ type: String }],
 });
 
 const contacts = mongoose.model("contacts", contactUsSchema);

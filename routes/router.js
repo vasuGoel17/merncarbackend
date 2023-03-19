@@ -1,10 +1,11 @@
+// "https://merncarbackend.onrender.com"
 const express = require("express");
 const router = express.Router();
-const signups = require("../models/signUpSchema");
 const bcrypt = require("bcryptjs");
 const authenticate = require("../middleware/authenticate");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
+const signups = require("../models/signUpSchema");
 const contacts = require("../models/contactusschema");
 
 const keysecret = "kuchbhikuchbhikuchbhikuchbhikuch";
@@ -13,9 +14,56 @@ const keysecret = "kuchbhikuchbhikuchbhikuchbhikuch";
 let transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "goelvasu17@gmail.com",
-    pass: "picvxeeutcmxhrty",
+    user: process.env.USER,
+    pass: process.env.PASS,
   },
+});
+
+router.post("/api/sendpasswordlink", async (req, res) => {
+  // console.log(req.body);
+  console.log("hello therer:");
+  const email = req.body.email;
+  if (!email) {
+    res.status(401).json({ status: 401, message: "Enter Your Email" });
+  }
+  try {
+    console.log("hello there: " + email);
+    const userfind = await signups.findOne({ email: email });
+    // console.log("userfind: " + userfind);
+    //generate token for reset password
+    const token = jwt.sign({ _id: userfind._id }, keysecret, {
+      expiresIn: "120s",
+    });
+    // console.log("token: " + token);
+    const setusertoken = await signups.findByIdAndUpdate(
+      { _id: userfind._id },
+      { verifytoken: token },
+      { new: true }
+    );
+    console.log("okokokok");
+    // console.log("setusertoken: " + setusertoken);
+    if (setusertoken) {
+      const mailtopt = {
+        from: "goelvasu17@gmail.com",
+        to: email,
+        subject: "sending email for password reset",
+        text: `THIS LINK IS VALID FOR 2 MINUTES http://localhost:3000/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
+      };
+      transporter.sendMail(mailtopt, (err, info) => {
+        if (err) {
+          console.log("error: ", err);
+          res.status(401).json({ status: 401, message: "email not sent" });
+        } else {
+          console.log("Email sent ", info.response);
+          res
+            .status(201)
+            .json({ status: 201, message: "email sent successfully" });
+        }
+      });
+    }
+  } catch (error) {
+    res.status(401).json({ status: 401, message: "Invalid User" });
+  }
 });
 
 //post request when you registered
@@ -115,50 +163,6 @@ router.get("/api/logout", authenticate, async (req, res) => {
   }
 });
 
-router.post("/api/sendpasswordlink", async (req, res) => {
-  // console.log(req.body);
-  const { email } = req.body;
-  if (!email) {
-    res.status(401).json({ status: 401, message: "Enter Your Email" });
-  }
-  try {
-    const userfind = await signups.findOne({ email: email });
-    // console.log("userfind: " + userfind);
-    //generate token for reset password
-    const token = jwt.sign({ _id: userfind._id }, keysecret, {
-      expiresIn: "120s",
-    });
-    // console.log("token: " + token);
-    const setusertoken = await signups.findByIdAndUpdate(
-      { _id: userfind._id },
-      { verifytoken: token },
-      { new: true }
-    );
-    // console.log("setusertoken: " + setusertoken);
-    if (setusertoken) {
-      const mailtopt = {
-        from: "goelvasu17@gmail.com",
-        to: email,
-        subject: "sending email for password reset",
-        text: `THIS LINK IS VALID FOR 2 MINUTES http://localhost:3000/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
-      };
-      transporter.sendMail(mailtopt, (err, info) => {
-        if (err) {
-          console.log("error: ", err);
-          res.status(401).json({ status: 401, message: "email not sent" });
-        } else {
-          console.log("Email sent ", info.response);
-          res
-            .status(201)
-            .json({ status: 201, message: "email sent successfully" });
-        }
-      });
-    }
-  } catch (error) {
-    res.status(401).json({ status: 401, message: "Invalid User" });
-  }
-});
-
 router.get("/api/forgetpassword/:id/:token", async (req, res) => {
   const { id, token } = req.params;
   // console.log(id, token);
@@ -219,18 +223,27 @@ router.post("/api/contact", async (req, res) => {
     if (!preuserEmail || !preuserNumber || !preuserName) {
       res.status(404).json("this user is not present");
     } else {
-      const newcontact = new contacts({
-        username: username,
-        email: email,
-        number: number,
-        place: place,
-        feedback: feedback,
-      });
-      //   newcontact.insert()
-      newcontact.save();
-      //   console.log("store: " + storecontact);
-      res.status(201).json({ status: 201 });
-      // console.log(newSignUp);
+      const preuser = await contacts.findOne({ email: email });
+      if (preuser) {
+        // console.log("baad me");
+        const add = await contacts.updateMany(
+          { email: email },
+          { $push: { feedbacks: feedback } }
+        );
+        res.status(201).json({ status: 201 });
+      } else {
+        const newcontact = new contacts({
+          username: username,
+          email: email,
+          number: number,
+          place: place,
+          feedbacks: feedback,
+        });
+        //   newcontact.insert()
+        newcontact.save();
+        //   console.log("store: " + storecontact);
+        res.status(201).json({ status: 201 });
+      }
     }
   } catch (err) {
     res.status(404).json(err);
