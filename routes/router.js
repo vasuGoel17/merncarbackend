@@ -293,7 +293,7 @@ router.post("/api/imgreg", upload.single("image"), async (req, res) => {
       return res.send({ status: 400, message: "bad request" });
     }
 
-    let img = `http://localhost:5000/${imageurl}`;
+    let img = `https://merncarbackend.onrender.com/${imageurl}`;
     console.log("img: ", img);
 
     let parts = [];
@@ -411,7 +411,7 @@ router.post("/api/changeimg", upload.single("image"), async (req, res) => {
         if (!imageurl) {
           return res.send({ status: 400, message: "bad request" });
         }
-        let img = `http://localhost:5000/${imageurl}`;
+        let img = `https://merncarbackend.onrender.com/${imageurl}`;
         console.log("img: ", img);
         let parts = [];
         console.log("hhhhhh", parts.length);
