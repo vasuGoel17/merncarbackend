@@ -1,14 +1,26 @@
-// "https://merncarbackend.onrender.com"
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const { createCanvas, loadImage } = require("canvas");
 const bcrypt = require("bcryptjs");
 const authenticate = require("../middleware/authenticate");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
+const users = require("../models/userSchema");
 const signups = require("../models/signUpSchema");
 const contacts = require("../models/contactusschema");
 
-const keysecret = "kuchbhikuchbhikuchbhikuchbhikuch";
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+const keysecret = process.env.KEYSECRET;
 
 //emailConfig
 let transporter = nodemailer.createTransport({
@@ -47,12 +59,14 @@ router.post("/api/sendpasswordlink", async (req, res) => {
         from: "goelvasu17@gmail.com",
         to: email,
         subject: "sending email for password reset",
-        text: `THIS LINK IS VALID FOR 2 MINUTES https://carrsmarket.netlify.app/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
+        text: `THIS LINK IS VALID FOR 2 MINUTES http://localhost:3000/forgetpassword/${userfind._id}/${setusertoken.verifytoken}`,
       };
       transporter.sendMail(mailtopt, (err, info) => {
         if (err) {
           console.log("error: ", err);
-          res.status(401).json({ status: 401, message: "email not sent" });
+          res
+            .status(401)
+            .json({ status: 401, message: "email not sent", error: err });
         } else {
           console.log("Email sent ", info.response);
           res
@@ -88,8 +102,13 @@ router.post("/api/register", async (req, res) => {
         password: password,
       });
 
+      const newuser = new users({
+        username: username,
+      });
+
       //password hashing
       const storeSignup = await newSignUp.save();
+      const storeuser = await newuser.save();
       res.status(201).json({ status: 201, storeSignup });
       // console.log(storeSignup);
       // console.log(newSignUp);
@@ -103,29 +122,33 @@ router.post("/api/register", async (req, res) => {
 //post request when you login
 router.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
+
   if (!username || !password) {
     res.status(404).json("please fill the data");
   }
   try {
+    console.log("Aaya");
     const userValid = await signups.findOne({ username: username });
     if (userValid) {
       const isMatch = await bcrypt.compare(password, userValid.password);
+      console.log("yaha Aaya");
       if (!isMatch) {
         console.log("something like password not matching");
         res.status(404).json({ error: "Password is incorrect" });
       } else {
-        const token = await userValid.generateAuthtoken();
-        // console.log(token);
-        res.cookie("usercookie", token, {
-          expires: new Date(Date.now() + 3600000),
-          httpOnly: true,
-        });
-
-        const result = {
-          userValid,
-          token,
-        };
-        res.status(201).json({ status: 201, result });
+        console.log("yaha bhi Aaya");
+        // const token = await userValid.generateAuthtoken();
+        // // console.log(token);
+        // res.cookie("usercookie", token, {
+        //   expires: new Date(Date.now() + 3600000),
+        //   httpOnly: true,
+        // });
+        // const result = {
+        //   userValid,
+        //   token,
+        // };
+        // result
+        res.status(201).json({ status: 201 });
       }
     } else {
       console.log("username not matching");
@@ -223,14 +246,18 @@ router.post("/api/contact", async (req, res) => {
     if (!preuserEmail || !preuserNumber || !preuserName) {
       res.status(404).json("this user is not present");
     } else {
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+
       const preuser = await contacts.findOne({ email: email });
       if (preuser) {
         // console.log("baad me");
         const add = await contacts.updateMany(
           { email: email },
           { $push: { feedbacks: feedback } }
-        );
-        res.status(201).json({ status: 201 });
+        ); // add "Sports" element
+        console.log(add);
       } else {
         const newcontact = new contacts({
           username: username,
@@ -244,11 +271,188 @@ router.post("/api/contact", async (req, res) => {
         //   console.log("store: " + storecontact);
         res.status(201).json({ status: 201 });
       }
+
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
+      // xssssssssssssssssssscccccccsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
     }
   } catch (err) {
     res.status(404).json(err);
     console.log("catched an error during register");
   }
+});
+
+router.post("/api/imgreg", upload.single("image"), async (req, res) => {
+  console.log(122);
+  console.log(req.file);
+  console.log(req.body);
+  try {
+    const username = req.body.username;
+    const imageurl = req.file.path;
+    if (!imageurl) {
+      return res.send({ status: 400, message: "bad request" });
+    }
+
+    let img = `http://localhost:5000/${imageurl}`;
+    console.log("img: ", img);
+
+    let parts = [];
+    console.log("hhhhhh", parts.length);
+
+    await loadImage(img).then((img) => {
+      const canvas = createCanvas(img.width / 3, img.height / 3);
+      const ctx = canvas.getContext("2d");
+      ctx.moveTo(0, 0);
+      let w2 = img.width / 3;
+      let h2 = img.height / 3;
+      console.log("w2: ", w2, "h2: ", h2);
+      for (let i = 0; i < 9; i++) {
+        let x = (-w2 * i) % (w2 * 3);
+        let y;
+        if ((h2 * i) / h2 <= 2) {
+          y = 0;
+        } else if ((h2 * i) / h2 <= 5 && (h2 * i) / h2 > 2) {
+          y = -h2 * 1;
+        } else {
+          y = -h2 * 2;
+        }
+        console.log("x: ", x, "y: ", y);
+        canvas.width = w2;
+        canvas.height = h2;
+        ctx.drawImage(img, x, y, w2 * 3, h2 * 3);
+        parts.push(canvas.toDataURL());
+        console.log("i: ", i);
+        // console.log("parts[i]: ", parts[i]);
+        add(i, parts[i], username, imageurl);
+      }
+    });
+
+    console.log("ddddddddddd:  ");
+    console.log("add: ", add);
+    return res.send({ status: 200, message: "good request" });
+  } catch (error) {}
+});
+
+router.post("/api/getuser", async (req, res) => {
+  try {
+    const { username } = req.body;
+    const requser = await users.findOne({ username: username });
+    console.log("hanji user: ", username);
+
+    res.send({ status: "ok", data: requser });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post("/api/imglogin", async (req, res) => {
+  const { username } = req.body;
+  const userValid = await signups.findOne({ username: username });
+  const token = await userValid.generateAuthtoken();
+  // console.log(token);
+  res.cookie("usercookie", token, {
+    expires: new Date(Date.now() + 3600000),
+    httpOnly: true,
+  });
+  const result = {
+    userValid,
+    token,
+  };
+  res.status(201).json({ status: 201, result });
+});
+
+const add = async (i, parts, username, imageurl) => {
+  console.log("aa: ", i);
+  await users.updateMany(
+    { username: username },
+    {
+      $set: {
+        imageurl: imageurl,
+      },
+      $push: {
+        imgsegment: { imgg: parts, num: i },
+      },
+    }
+  );
+};
+
+const change = async (i, parts, username, imageurl) => {
+  console.log("aa: ", i);
+  await users.updateOne(
+    { username: username, "imgsegment.num": i },
+    {
+      $set: {
+        "imgsegment.$.imgg": parts,
+        imageurl: imageurl,
+      },
+    }
+  );
+};
+
+router.post("/api/changeimg", upload.single("image"), async (req, res) => {
+  console.log(1);
+  console.log(req.body);
+  console.log(req.file);
+  const { password, username } = req.body;
+  if (!password || !username) {
+    res.status(404).json("please fill the data");
+  }
+  try {
+    const userValid = await signups.findOne({ username: username });
+    if (userValid) {
+      const isMatch = await bcrypt.compare(password, userValid.password);
+      console.log("yaha Aaya");
+      if (!isMatch) {
+        console.log("something like password not matching");
+        res.status(404).json({ error: "Password is incorrect" });
+      } else {
+        console.log("yaha bhi Aaya");
+        const imageurl = req.file.path;
+        if (!imageurl) {
+          return res.send({ status: 400, message: "bad request" });
+        }
+        let img = `http://localhost:5000/${imageurl}`;
+        console.log("img: ", img);
+        let parts = [];
+        console.log("hhhhhh", parts.length);
+        await loadImage(img).then((img) => {
+          const canvas = createCanvas(img.width / 3, img.height / 3);
+          const ctx = canvas.getContext("2d");
+          ctx.moveTo(0, 0);
+          let w2 = img.width / 3;
+          let h2 = img.height / 3;
+          console.log("w2: ", w2, "h2: ", h2);
+          for (let i = 0; i < 9; i++) {
+            let x = (-w2 * i) % (w2 * 3);
+            let y;
+            if ((h2 * i) / h2 <= 2) {
+              y = 0;
+            } else if ((h2 * i) / h2 <= 5 && (h2 * i) / h2 > 2) {
+              y = -h2 * 1;
+            } else {
+              y = -h2 * 2;
+            }
+            console.log("x: ", x, "y: ", y);
+            canvas.width = w2;
+            canvas.height = h2;
+            ctx.drawImage(img, x, y, w2 * 3, h2 * 3);
+            parts.push(canvas.toDataURL());
+            console.log("i: ", i);
+            // console.log("parts[i]: ", imageurl);
+            // console.log("parts ", username);
+            change(i, parts[i], username, imageurl);
+            console.log("ddddddddddd:  ");
+            console.log("add: ", change);
+          }
+          return res.send({ status: 200, message: "good request" });
+        });
+        res.status(201).json({ status: 201 });
+      }
+    } else {
+      console.log("username not matching");
+      res.status(404).json({ error: "username is not used till now.." });
+    }
+  } catch (error) {}
 });
 
 module.exports = router;

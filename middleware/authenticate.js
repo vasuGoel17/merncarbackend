@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const signups = require("../models/signUpSchema");
-const keysecret = "kuchbhikuchbhikuchbhikuchbhikuch";
+const keysecret = process.env.KEYSECRET;
 
 const authenticate = async (req, res, next) => {
   try {
